@@ -16,10 +16,11 @@ import org.lagrange.dev.common.Keystore
 import org.lagrange.dev.utils.crypto.TEA
 import org.lagrange.dev.utils.ext.*
 import org.lagrange.dev.utils.generator.StringGenerator
-import org.lagrange.dev.utils.proto.protobufOf
+import org.lagrange.dev.utils.proto.*
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.zip.GZIPInputStream
+import java.util.zip.InflaterInputStream
 import kotlin.random.Random
 
 
@@ -52,6 +53,20 @@ internal class PacketHandler(
         CoroutineScope(Dispatchers.IO).launch {
             handleReceive()
         }
+    }
+    
+    suspend fun sendOidb(command: Int, subCmd: Int, payload: ByteArray, reserve: Boolean = false): OidbResponse {
+        val packetCommand = "OidbSvcTrpcTcp.0x${command.toString(16)}_$subCmd"
+        val packet = protobufOf(
+            1 to command,
+            2 to subCmd,
+            4 to payload,
+            12 to reserve
+        )
+        val response = sendPacket(packetCommand, packet.toByteArray())
+        val proto = ProtoUtils.decodeFromByteArray(response.response)
+        
+        return OidbResponse(proto[3].asInt, proto[5].asUtf8String, proto[4].asByteArray)
     }
     
     suspend fun sendPacket(command: String, payload: ByteArray): SsoResponse {
@@ -173,7 +188,7 @@ internal class PacketHandler(
         var payload = reader.readBytes(Prefix.UINT_32 or Prefix.INCLUDE_PREFIX)
         
         if (isCompressed) {
-            val gzip = GZIPInputStream(payload.inputStream())
+            val gzip = InflaterInputStream(payload.inputStream())
             val output = BytePacketBuilder()
             output.writeFully(gzip.readBytes())
             payload = output.build().readBytes()
