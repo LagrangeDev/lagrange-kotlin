@@ -5,7 +5,8 @@ import com.google.protobuf.CodedOutputStream
 import com.google.protobuf.WireFormat
 
 class ProtoMap(
-    val value: HashMap<Int, ProtoValue>
+    val value: HashMap<Int, ProtoValue>,
+    val original: ByteArray? = null
 ): ProtoValue {
     constructor(): this(hashMapOf())
 

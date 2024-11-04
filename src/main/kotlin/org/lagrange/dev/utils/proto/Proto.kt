@@ -56,11 +56,15 @@ val ProtoValue.asList: ProtoList
     get() = (this as ProtoList)
 
 val ProtoValue.asByteArray: ByteArray
-    get() = if (this is ProtoMap) {
-        toByteArray()
-    } else {
-        (this as ProtoByteString).toByteArray()
+    get() = when (this) {
+        is ProtoMap -> this.original ?: error("Original is null")
+        is ProtoByteString -> this.value.toByteArray()
+        else -> error("Not support type: ${this::class.simpleName}")
     }
 
 val ProtoValue.asUtf8String: String
-    get() = (this as ProtoByteString).toUtfString()
+    get() = when (this) {
+        is ProtoMap -> this.original?.decodeToString() ?: error("Original is null")
+        is ProtoByteString -> this.toUtfString()
+        else -> error("Not support type: ${this::class.simpleName}")
+    }

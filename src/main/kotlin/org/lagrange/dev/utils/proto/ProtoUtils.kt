@@ -47,6 +47,7 @@ object ProtoUtils {
             is Map<*, *> -> ProtoMap(hashMapOf(*any.map { (k, v) ->
                 k as Int to any2proto(v!!)
             }.toTypedArray()))
+            is Boolean -> (if (any) 1 else 0).proto
             is Pair<*, *> -> {
                 val (tag, v) = any
                 val value = any2proto(v!!)
@@ -89,7 +90,7 @@ object ProtoUtils {
             field.lengthDelimitedList.forEach {
                 try {
                     val unknownFieldSet = UnknownFieldSet.parseFrom(it)
-                    val map = ProtoMap(hashMapOf())
+                    val map = ProtoMap(hashMapOf(), it.toByteArray())
                     printUnknownFieldSet(unknownFieldSet, map)
                     dest[tag] = map
                 } catch (e: Throwable) {
