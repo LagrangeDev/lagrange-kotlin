@@ -19,7 +19,6 @@ import org.lagrange.dev.utils.generator.StringGenerator
 import org.lagrange.dev.utils.proto.*
 import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
-import java.util.zip.GZIPInputStream
 import java.util.zip.InflaterInputStream
 import kotlin.random.Random
 

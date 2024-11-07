@@ -5,6 +5,16 @@ import com.google.protobuf.CodedOutputStream
 import com.google.protobuf.UnknownFieldSet
 
 object ProtoUtils {
+    fun createProtoFill(vararg tags: Int): ProtoMap {
+        val map = ProtoMap(hashMapOf())
+        
+        for (tag in tags) {
+            map[tag] = 1
+        }
+        
+        return map
+    }
+    
     fun decodeFromByteArray(data: ByteArray): ProtoMap {
         val unknownFieldSet = UnknownFieldSet.parseFrom(data)
         val dest = ProtoMap(hashMapOf())
