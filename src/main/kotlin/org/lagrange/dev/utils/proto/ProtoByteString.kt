@@ -2,6 +2,7 @@ package org.lagrange.dev.utils.proto
 
 import com.google.protobuf.ByteString
 import com.google.protobuf.CodedOutputStream
+import org.lagrange.dev.utils.ext.toHex
 
 class ProtoByteString(
     val value: ByteString
@@ -32,6 +33,6 @@ class ProtoByteString(
 
     @OptIn(ExperimentalStdlibApi::class)
     override fun toString(): String {
-        return "ByteString(${value.toByteArray().toHexString()})"
+        return "ByteString(${value.toByteArray().toHex()})"
     }
 }

@@ -1,5 +1,8 @@
 package org.lagrange.dev.common
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 class BotGroup(
     val groupUin: Long,
     val groupName: String,

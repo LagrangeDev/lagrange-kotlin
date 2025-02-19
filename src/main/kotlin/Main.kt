@@ -14,7 +14,6 @@ fun main() {
         val (url, qrcode) = runBlocking {
             bot.fetchQrCode()
         }
-        // /Users/wenxuanlin/Desktop/Project/OicqRepos/lagrange-kotlin
         Files.write(Paths.get("/Users/wenxuanlin/Desktop/Project/OicqRepos/lagrange-kotlin/qrcode.png"), qrcode)
 
         val success = runBlocking {

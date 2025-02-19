@@ -1,18 +1,22 @@
 package org.lagrange.dev.network
 
 import io.ktor.client.*
+import io.ktor.client.call.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.contentnegotiation.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
+import io.ktor.serialization.kotlinx.json.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import org.lagrange.dev.common.AppInfo
 import org.lagrange.dev.common.Keystore
+import org.lagrange.dev.component.BotListener
 import org.lagrange.dev.utils.crypto.TEA
 import org.lagrange.dev.utils.ext.*
 import org.lagrange.dev.utils.generator.StringGenerator
@@ -23,9 +27,11 @@ import java.util.zip.InflaterInputStream
 import kotlin.random.Random
 
 
+@OptIn(ExperimentalUnsignedTypes::class)
 internal class PacketHandler(
     private val keystore: Keystore,
-    private val appInfo: AppInfo
+    private val appInfo: AppInfo,
+    private val listener: BotListener
 ) {
     private var sequence = Random.nextInt(0x10000, 0x20000)
     private val host = "msfwifi.3g.qq.com"
@@ -40,7 +46,11 @@ internal class PacketHandler(
     var connected = false
 
     private val logger = LoggerFactory.getLogger(PacketHandler::class.java)
-    private val client = HttpClient()
+    private val client = HttpClient(CIO) {
+        install(ContentNegotiation) {
+            json()
+        }
+    }
 
     suspend fun connect() {
         val s = socket.connect(host, port)
@@ -52,6 +62,12 @@ internal class PacketHandler(
         CoroutineScope(Dispatchers.IO).launch {
             handleReceive()
         }
+    }
+    
+    fun disconnect() {
+        input.cancel()
+        output.close()
+        connected = false
     }
     
     suspend fun sendOidb(command: Int, subCmd: Int, payload: ByteArray, reserve: Boolean = false): OidbResponse {
@@ -130,15 +146,12 @@ internal class PacketHandler(
         
         if (whiteListCommand.contains(command)) {
             val url = "https://sign.lagrangecore.org/api/sign/25765"
-            val response = runBlocking { 
-                client.post<String>(url) {
-                    body = Json.encodeToString(SignRequest(cmd = command, seq = sequence, src = payload.toHex()))
-                    headers {
-                        append("Content-Type", "application/json")
-                    }
-                }
-            }
-            val value = Json.decodeFromString(SignResponse.serializer(), response).value
+            val value = runBlocking {
+                client.post(url) {
+                    contentType(ContentType.Application.Json)
+                    setBody(SignRequest(cmd = command, seq = sequence, src = payload.toHex()))
+                }.body<SignResponse>()
+            }.value
             proto[24] = protobufOf(
                 1 to value.sign.fromHex(),
                 2 to value.token.fromHex(),
@@ -161,9 +174,11 @@ internal class PacketHandler(
                 val service = parseService(payload)
                 val sso = parseSso(service)
                 logger.debug("Received packet '${sso.command}' with sequence ${sso.sequence}")
-                
-                pending.remove(sso.sequence).also { 
-                    it?.complete(sso) ?: logger.warn("No pending request for sequence ${sso.sequence}")
+
+                if (!listener.handle(sso)) {
+                    pending.remove(sso.sequence).also {
+                        it?.complete(sso) ?: logger.warn("No pending request for sequence ${sso.sequence}")
+                    }
                 }
             } catch (e: Exception) {
                 logger.error("Error while reading packet", e)

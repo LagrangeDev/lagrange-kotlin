@@ -9,8 +9,8 @@ import kotlin.random.Random
 
 @Serializable
 data class Keystore(
-    var uin: Long,
-    var uid: String,
+    @JvmField var uin: Long,
+    @JvmField var uid: String,
 
     var a2: ByteArray,
     var d2: ByteArray,

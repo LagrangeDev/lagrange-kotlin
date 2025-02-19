@@ -15,7 +15,23 @@ internal class BotCache(private val context: BotContext) {
     private var groupList: List<BotGroup>? = null
     
     private var groupMemberList: MutableMap<Long, List<BotGroupMember>> = mutableMapOf()
+
+    internal val flattenMemberList: MutableMap<Long, BotGroupMember> = mutableMapOf()
     
+    suspend fun resolveUid(uin: Long, groupUin: Long? = null): String? {
+        return if (uinToUid.containsKey(uin)) {
+            uinToUid[uin]!!
+        } else {
+            if (groupUin != null) {
+                getGroupMemberList(groupUin, true)
+            } else {
+                getFriendList(true)
+            }
+            
+            uinToUid[uin]
+        }
+    }
+
     suspend fun getFriendList(refreshCache: Boolean): List<BotFriend> {
         if (friendList == null || refreshCache) {
             val list = fetchFriendList()
@@ -45,6 +61,7 @@ internal class BotCache(private val context: BotContext) {
             
             for (m in list) {
                 uinToUid[m.uin] = m.uid
+                flattenMemberList[m.uin] = m
             }
         }
         
@@ -94,7 +111,7 @@ internal class BotCache(private val context: BotContext) {
         val result = mutableListOf<BotGroup>()
         val proto = protobufOf(
             1 to protobufOf(
-                1 to ProtoUtils.createProtoFill(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 5001, 5002, 5003),
+                1 to ProtoUtils.createProtoFill(1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 5001, 5002, 5003),
                 2 to ProtoUtils.createProtoFill(1, 2, 3, 4, 5, 6, 7, 8),
                 3 to ProtoUtils.createProtoFill(5, 6)
             )

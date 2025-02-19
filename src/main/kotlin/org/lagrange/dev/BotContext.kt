@@ -2,7 +2,7 @@ package org.lagrange.dev
 
 import kotlinx.coroutines.*
 import org.lagrange.dev.common.*
-import org.lagrange.dev.component.BotCache
+import org.lagrange.dev.component.*
 import org.lagrange.dev.network.PacketHandler
 import org.lagrange.dev.packet.login.QrCodeState
 import org.lagrange.dev.packet.login.ntlogin
@@ -10,21 +10,28 @@ import org.lagrange.dev.packet.login.wtlogin
 import org.lagrange.dev.utils.ext.toHex
 import org.lagrange.dev.utils.proto.*
 import org.slf4j.LoggerFactory
-import java.util.concurrent.Executors
 
 class BotContext(
     val keystore: Keystore,
-    private val appInfo: AppInfo
+    internal val appInfo: AppInfo
 ) {
-    internal val packet = PacketHandler(keystore, appInfo)
-
+    private var qrCodeState: QrCodeState = QrCodeState.Unknown
+    
+    internal val cache = BotCache(this)
+    internal val listener = BotListener(this)
+    internal val highway = BotHighway(this)
+    internal val event = BotEvent(this)
+    
     internal val logger = LoggerFactory.getLogger(BotContext::class.java)
 
-    internal val cache = BotCache(this)
+    internal val packet = PacketHandler(keystore, appInfo, listener)
+
+    val connected 
+        get() = packet.connected
     
     suspend fun getFriendList(refreshCache: Boolean = false) = cache.getFriendList(refreshCache)
     
-    suspend fun getGroupList(refreshCache: Boolean = false)= cache.getGroupList(refreshCache)
+    suspend fun getGroupList(refreshCache: Boolean = false) = cache.getGroupList(refreshCache)
     
     suspend fun getGroupMemberList(groupUin: Long, refreshCache: Boolean = false) = cache.getGroupMemberList(groupUin, refreshCache)
 
@@ -43,10 +50,10 @@ class BotContext(
 
     suspend fun loginByQrCode(): Boolean {
         while (true) {
-            val state = queryState()
-            logger.info("QrCode state: ${state.value}")
+            qrCodeState = queryState()
+            logger.info("QrCode state: ${qrCodeState.value}")
 
-            if (state.value == QrCodeState.Confirmed.value) {
+            if (qrCodeState.value == QrCodeState.Confirmed.value) {
                 logger.info("QrCode confirmed, trying to login with NoPicSig")
                 break
             }
@@ -86,6 +93,18 @@ class BotContext(
         
         return false
     }
+    
+    suspend fun getState(): QrCodeState {
+        if (qrCodeState == QrCodeState.Unknown) {
+            qrCodeState = queryState()
+        }
+        
+        return qrCodeState
+    }
+    
+    fun logout() {
+        packet.disconnect()
+    }
 
     private suspend fun queryState(): QrCodeState {
         val transEmp = wtlogin(keystore, appInfo).buildTransEmp0x12()
@@ -114,19 +133,22 @@ class BotContext(
         )
 
         val sso = packet.sendPacket("trpc.qq_new_tech.status_svc.StatusService.Register", proto.toByteArray())
+        if (sso.retCode != 0) {
+            logger.error("Failed to register, retCode: ${sso.retCode} | retMsg: ${sso.extra}")
+            return false
+        }
+        
         val parsed = ProtoUtils.decodeFromByteArray(sso.response)
-        val success = parsed[2].asUtf8String.contains("register success")
+        val success = parsed[2]?.asUtf8String?.contains("register success") == true
 
-        Executors.newSingleThreadExecutor().asCoroutineDispatcher().run {
-            GlobalScope.launch {
-                while (true) {
-                    val ssoHeartBeat = protobufOf(1 to 1)
-                    packet.sendPacket("trpc.qq_new_tech.status_svc.StatusService.SsoHeartBeat", ssoHeartBeat.toByteArray())
-                    Thread.sleep(270 * 1000)
-                }
+        GlobalScope.launch {
+            while (true) {
+                val ssoHeartBeat = protobufOf(1 to 1)
+                packet.sendPacket("trpc.qq_new_tech.status_svc.StatusService.SsoHeartBeat", ssoHeartBeat.toByteArray())
+                delay(60 * 1000)
             }
         }
-
+        
         return success
     }
 }

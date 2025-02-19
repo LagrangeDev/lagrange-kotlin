@@ -137,7 +137,12 @@ internal class wtlogin(
             }
             return true
         } else {
+            val tlv146 = ByteReadPacket(tlv119Reader[0x146u]!!)
+            val state = tlv146.readUInt()
+            val tag = tlv146.readString(Prefix.UINT_16 or Prefix.LENGTH_ONLY)
+            val message = tlv146.readString(Prefix.UINT_16 or Prefix.LENGTH_ONLY)
             
+            println("Login failed: $state, $tag, $message")
         }
         
         return false

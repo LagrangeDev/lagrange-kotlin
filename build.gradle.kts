@@ -16,17 +16,18 @@ dependencies {
     testImplementation(kotlin("test"))
     implementation("com.google.protobuf:protobuf-java:3.24.0")
     
-    implementation("io.ktor:ktor-client-core:1.6.7")
-    implementation("io.ktor:ktor-client-cio:1.6.7")
-    implementation("io.ktor:ktor-client-json:1.6.7")
-    implementation("io.ktor:ktor-client-serialization:1.6.7")
+    val ktorVersion = "2.3.12"
+    
+    implementation("io.ktor:ktor-client-core:$ktorVersion")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-json:$ktorVersion")
+    implementation("io.ktor:ktor-client-serialization:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:$ktorVersion")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
 
     implementation("org.slf4j:slf4j-api:2.0.0")
     implementation("ch.qos.logback:logback-classic:1.4.12")
 }
-
-    
-
 
 java {
     toolchain {
