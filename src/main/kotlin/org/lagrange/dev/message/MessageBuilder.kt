@@ -18,15 +18,9 @@ class MessageBuilder {
     
     fun record(buffer: ByteArray) = entities.add(RecordEntity(buffer.inputStream()))
 
-    fun video(path: String) {
-        val inputStream = File(path).inputStream()
-        TODO()
-    }
+    fun video(path: String) = entities.add(VideoEntity(File(path).inputStream()))
     
-    fun video(buffer: ByteArray) {
-        val inputStream = buffer.inputStream()
-        TODO()
-    }
+    fun video(buffer: ByteArray) = entities.add(VideoEntity(buffer.inputStream()))
 
     fun mention(uin: Long, display: String = "") = entities.add(MentionEntity(uin, display))
     
