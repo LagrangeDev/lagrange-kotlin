@@ -11,6 +11,7 @@ import org.lagrange.dev.utils.ext.calculateSHA1
 import org.lagrange.dev.utils.ext.readInt32LE
 import org.lagrange.dev.utils.ext.toHex
 import org.lagrange.dev.utils.helper.ImageHelper
+import org.lagrange.dev.utils.helper.ImageHelper.ImageFormat.*
 import org.lagrange.dev.utils.proto.*
 import kotlin.random.Random
 
@@ -38,7 +39,8 @@ suspend fun buildNTV2RichMediaUploadReq(message: Message, entity: NTV2RichMediaE
         4 to Random.nextInt(),
         5 to when (entity) {
             is ImageEntity -> 1
-            is RecordEntity, is VideoEntity -> 2
+            is RecordEntity -> 1
+            is VideoEntity -> 1
         },
         6 to ext,
         7 to 0,
@@ -69,7 +71,7 @@ fun parseNTV2RichMediaUploadReq(proto: ProtoMap): Triple<ProtoMap, ProtoMap, Pro
         )
     }
     
-    if (!upload.has(10)) {
+    if (!upload.has(1)) {
         return Triple(msgInfo.asMap, compat.asMap, null)
     }
     
@@ -89,7 +91,7 @@ fun parseNTV2RichMediaUploadReq(proto: ProtoMap): Triple<ProtoMap, ProtoMap, Pro
 private fun buildHead(message: Message, entity: NTV2RichMediaEntity, command: Int): ProtoMap {
     val (request, business) = when (entity) {
         is ImageEntity -> 2 to 1
-        is RecordEntity -> 1 to 3
+        is RecordEntity -> 2 to 3
         is VideoEntity -> 2 to 2
     }
     
@@ -149,12 +151,12 @@ private suspend fun buildFileInfo(entity: NTV2RichMediaEntity) = protobufOf(
     },
     2 to entity.stream!!.calculateMD5().toHex(),
     3 to entity.stream!!.calculateSHA1().toHex(),
-    4 to entity.stream!!.calculateMD5().toHex() + ".png",
     5 to buildFileType(entity),
 ).also {
     when (entity) {
         is ImageEntity -> {
             val (type, size) = ImageHelper.resolve(entity.stream!!)
+            it[4] = "${entity.stream!!.calculateMD5().toHex()}.${getFileExt(entity, type)}"
             it[5][2] = type.value
             it[6] = size.x
             it[7] = size.y
@@ -162,10 +164,24 @@ private suspend fun buildFileInfo(entity: NTV2RichMediaEntity) = protobufOf(
             it[9] = 1
         }
         else -> {
+            it[4] = "${entity.stream!!.calculateMD5().toHex()}.${getFileExt(entity)}"
             it[6] = 0
             it[7] = 0
-            it[8] = 114514
+            it[8] = 10
             it[9] = 0
         }
     }
+}
+
+private fun getFileExt(entity: NTV2RichMediaEntity, imageFormat: ImageHelper.ImageFormat = Unknown) = when (entity) {
+    is ImageEntity -> when (imageFormat) {
+        Png -> "png"
+        Jpeg -> "jpg"
+        Gif -> "gif"
+        Bmp -> "bmp"
+        Webp -> "webp"
+        else -> "png"
+    }
+    is RecordEntity -> "amr"
+    is VideoEntity -> "mp4"
 }

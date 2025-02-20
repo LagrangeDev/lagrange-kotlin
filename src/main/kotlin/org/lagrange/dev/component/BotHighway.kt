@@ -50,7 +50,9 @@ internal class BotHighway(private val context: BotContext) {
         if (ticket == null || urls == null) {
             fetchTicket()
         }
-        
+
+        val fileMd5 = input.calculateMD5()
+
         var offset = 0
         val fileSize = withContext(Dispatchers.IO) {
             input.available()
@@ -63,7 +65,6 @@ internal class BotHighway(private val context: BotContext) {
             val payload = withContext(Dispatchers.IO) {
                 input.read(buffer)
             }
-            val fileMd5 = input.calculateMD5()
             
             val proto = protobufOf(
                 1 to protobufOf(
@@ -96,6 +97,7 @@ internal class BotHighway(private val context: BotContext) {
                     3 to context.appInfo.appId
                 )
             )
+            val isEnd = offset + payload == fileSize
             logger.trace("Upload chunk: offset={}, payload={}, head={}", offset, payload, proto.toByteArray().toHex())
             
             offset += payload
@@ -105,7 +107,7 @@ internal class BotHighway(private val context: BotContext) {
             jobs.add(CoroutineScope(Dispatchers.IO).launch {
                 runCatching {
                     semaphore.acquire()
-                    val (respHead, body) = sendPacket(proto, buffer, url, offset == fileSize)
+                    val (respHead, body) = sendPacket(proto, buffer, url, isEnd)
                     logger.debug("Upload response: {}", respHead[3].asInt)
                 }.onFailure {
                     logger.error("Failed to upload chunk", it)

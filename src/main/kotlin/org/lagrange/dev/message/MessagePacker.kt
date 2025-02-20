@@ -13,7 +13,7 @@ object MessagePacker {
         TextEntity(""),
         MentionEntity(0, ""),
         ImageEntity(),
-        RecordEntity(""),
+        RecordEntity(),
     )
 
     suspend fun build(context: BotContext, message: Message, builder: MessageBuilder) = protobufOf(

@@ -13,8 +13,6 @@ import org.lagrange.dev.utils.proto.*
 import java.io.InputStream
 
 class ImageEntity : NTV2RichMediaEntity {
-    var url = ""
-
     constructor() : super() // for factory
 
     constructor(stream: InputStream) : super() {
@@ -22,12 +20,13 @@ class ImageEntity : NTV2RichMediaEntity {
         this.stream = stream
     }
 
+    var url = ""
     var summary: String = "[图片]"
     var subType: Int = 0
-    
+
+    private var compat: ProtoMap? = null
     override var msgInfo: ProtoMap? = null
     override var stream: InputStream? = null    
-    private var compat: ProtoMap? = null
     
     override fun encode() = listOf(
         protobufOf(

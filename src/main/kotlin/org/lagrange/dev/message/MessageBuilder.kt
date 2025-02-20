@@ -13,17 +13,10 @@ class MessageBuilder {
     fun image(path: String) = entities.add(ImageEntity(File(path).inputStream()))
     
     fun image(buffer: ByteArray) = entities.add(ImageEntity(buffer.inputStream()))
-    
 
-    fun record(path: String) {
-        val inputStream = File(path).inputStream()
-        TODO()
-    }
+    fun record(path: String) = entities.add(RecordEntity(File(path).inputStream()))
     
-    fun record(buffer: ByteArray) {
-        val inputStream = buffer.inputStream()
-        TODO()
-    }
+    fun record(buffer: ByteArray) = entities.add(RecordEntity(buffer.inputStream()))
 
     fun video(path: String) {
         val inputStream = File(path).inputStream()
@@ -32,11 +25,6 @@ class MessageBuilder {
     
     fun video(buffer: ByteArray) {
         val inputStream = buffer.inputStream()
-        TODO()
-    }
-
-    fun file(path: String) {
-        val inputStream = File(path).inputStream()
         TODO()
     }
 
