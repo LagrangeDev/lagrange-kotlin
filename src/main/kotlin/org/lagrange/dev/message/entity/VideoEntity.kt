@@ -67,7 +67,7 @@ class VideoEntity : NTV2RichMediaEntity {
                 13 to EMPTY_BYTE_ARRAY
             )
         )
-        val thumbnail = ImageEntity(stream ?: ByteArrayInputStream(defaultThumbnail))
+        val thumbnail = ImageEntity(thumbnail ?: ByteArrayInputStream(defaultThumbnail))
         val packet = buildNTV2RichMediaUploadReq(message, this, ext, (100 to thumbnail))
         val response = context.packet.sendOidb(if (message.isGroup) 0x11ea else 0x11e9, 100, packet.toByteArray(), true)
         
