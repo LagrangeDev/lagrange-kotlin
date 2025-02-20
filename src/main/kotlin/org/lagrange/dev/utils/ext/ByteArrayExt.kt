@@ -1,5 +1,15 @@
 package org.lagrange.dev.utils.ext
 
+import java.security.MessageDigest
+
+val EMPTY_BYTE_ARRAY = ByteArray(0)
+
+internal fun ByteArray.calculateMD5(): ByteArray {
+    val digest = MessageDigest.getInstance("MD5")
+    digest.update(this)
+    return digest.digest()
+}
+
 internal fun ByteArray.toHex(): String {
     return joinToString("") {
         it.toInt().and(0xff).toString(16).padStart(2, '0')

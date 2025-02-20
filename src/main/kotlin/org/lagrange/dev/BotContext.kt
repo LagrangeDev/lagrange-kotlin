@@ -18,16 +18,19 @@ class BotContext(
     private var qrCodeState: QrCodeState = QrCodeState.Unknown
     
     internal val cache = BotCache(this)
-    internal val listener = BotListener(this)
-    internal val highway = BotHighway(this)
+    internal val listener = BotListener(this) 
     internal val event = BotEvent(this)
     
     internal val logger = LoggerFactory.getLogger(BotContext::class.java)
 
     internal val packet = PacketHandler(keystore, appInfo, listener)
 
+    internal val highway = BotHighway(this)
+
     val connected 
         get() = packet.connected
+    var online: Boolean = false 
+        private set
     
     suspend fun getFriendList(refreshCache: Boolean = false) = cache.getFriendList(refreshCache)
     
@@ -140,6 +143,7 @@ class BotContext(
         
         val parsed = ProtoUtils.decodeFromByteArray(sso.response)
         val success = parsed[2]?.asUtf8String?.contains("register success") == true
+        online = success
 
         GlobalScope.launch {
             while (true) {

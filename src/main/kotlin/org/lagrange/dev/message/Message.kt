@@ -12,6 +12,9 @@ class Message(
     internal var sequence: Int = 0,
     internal val clientSequence: Int = Random.nextInt(100000, 999999)
 ) {
+    val isGroup
+        get() = group != null
+    
     val entities = mutableListOf<AbstractMessageEntity>()
     var time: Long = System.currentTimeMillis() / 1000
 }

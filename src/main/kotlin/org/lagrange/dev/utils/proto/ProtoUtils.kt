@@ -46,33 +46,31 @@ object ProtoUtils {
         return if (size and -268435456 == 0) 4 else 5
     }
 
-    internal fun any2proto(any: Any): ProtoValue {
-        return when(any) {
-            is Number -> any.proto
-            is ByteArray -> any.proto
-            is String -> any.proto
-            is ByteString -> any.proto
-            is Array<*> -> ProtoList(arrayListOf(*any.map { any2proto(it!!) }.toTypedArray()))
-            is Collection<*> -> ProtoList(arrayListOf(*any.map { any2proto(it!!) }.toTypedArray()))
-            is Map<*, *> -> ProtoMap(hashMapOf(*any.map { (k, v) ->
-                k as Int to any2proto(v!!)
-            }.toTypedArray()))
-            is Boolean -> (if (any) 1 else 0).proto
-            is Pair<*, *> -> {
-                val (tag, v) = any
-                val value = any2proto(v!!)
-                when (tag) {
-                    is Pair<*, *> -> ProtoMap().apply {
-                        val tags = walkPairTags(tag)
-                        set(*tags.toIntArray(), v = value)
-                    }
-                    is Number -> ProtoMap(hashMapOf(tag.toInt() to value))
-                    else -> error("Not support type for tag: ${tag.toString()}")
+    internal fun any2proto(any: Any): ProtoValue = when(any) {
+        is Number -> any.proto
+        is ByteArray -> any.proto
+        is String -> any.proto
+        is ByteString -> any.proto
+        is Array<*> -> ProtoList(arrayListOf(*any.map { any2proto(it!!) }.toTypedArray()))
+        is Collection<*> -> ProtoList(arrayListOf(*any.map { any2proto(it!!) }.toTypedArray()))
+        is Map<*, *> -> ProtoMap(hashMapOf(*any.map { (k, v) ->
+            k as Int to any2proto(v!!)
+        }.toTypedArray()))
+        is Boolean -> (if (any) 1 else 0).proto
+        is Pair<*, *> -> {
+            val (tag, v) = any
+            val value = any2proto(v!!)
+            when (tag) {
+                is Pair<*, *> -> ProtoMap().apply {
+                    val tags = walkPairTags(tag)
+                    set(*tags.toIntArray(), v = value)
                 }
+                is Number -> ProtoMap(hashMapOf(tag.toInt() to value))
+                else -> error("Not support type for tag: ${tag.toString()}")
             }
-            is ProtoMap -> any
-            else -> error("Not support type: ${any::class.simpleName}")
         }
+        is ProtoMap -> any
+        else -> error("Not support type: ${any::class.simpleName}")
     }
 
     fun walkPairTags(pair: Pair<*, *>, tags: MutableList<Int> = mutableListOf()): List<Int> {

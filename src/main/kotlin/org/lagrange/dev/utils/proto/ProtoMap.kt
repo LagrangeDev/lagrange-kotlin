@@ -129,9 +129,14 @@ class ProtoMap(
     override fun writeTo(output: CodedOutputStream, tag: Int) {
         output.writeTag(tag, WireFormat.WIRETYPE_LENGTH_DELIMITED)
         val dataSize = computeSizeDirectly()
-        output.writeUInt32NoTag(dataSize)
-        value.forEach { (tag, proto) ->
-            proto.writeTo(output, tag)
+        if (original == null) {
+            output.writeUInt32NoTag(dataSize)
+            value.forEach { (tag, proto) ->
+                proto.writeTo(output, tag)
+            }
+        } else {
+            output.writeUInt32NoTag(original.size)
+            output.write(original, 0, original.size)
         }
     }
 

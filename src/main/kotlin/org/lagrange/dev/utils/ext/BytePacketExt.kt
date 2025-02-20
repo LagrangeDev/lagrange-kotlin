@@ -54,3 +54,13 @@ private fun ByteReadPacket.readLength(prefix: Prefix): UInt {
         else -> 0u
     }
 }
+
+fun ByteReadPacket.readShortLittleEndian(): Short {
+    val value = this.readShort()
+    return if (value.toInt() < 0) (value.toInt() + Short.MAX_VALUE * 2).toShort() else value
+}
+
+fun ByteReadPacket.readIntLittleEndian(): Int {
+    val value = this.readInt()
+    return if (value < 0) (value + Int.MAX_VALUE * 2) else value
+}

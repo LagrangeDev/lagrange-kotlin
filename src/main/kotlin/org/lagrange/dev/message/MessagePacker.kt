@@ -12,7 +12,8 @@ object MessagePacker {
     private val factory: ArrayList<AbstractMessageEntity> = arrayListOf(
         TextEntity(""),
         MentionEntity(0, ""),
-        ImageEntity("")
+        ImageEntity(),
+        RecordEntity(""),
     )
 
     suspend fun build(context: BotContext, message: Message, builder: MessageBuilder) = protobufOf(
