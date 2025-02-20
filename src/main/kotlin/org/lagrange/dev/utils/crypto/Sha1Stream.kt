@@ -80,7 +80,7 @@ class Sha1Stream {
         state[4] += e
     }
 
-    private fun update(data: ByteArray, len: Int) {
+    fun update(data: ByteArray, len: Int) {
         var index = (count[0] ushr 3) and 0x3F
         count[0] = count[0] + (len shl 3)
 
