@@ -140,19 +140,21 @@ class ProtoMap(
         }
     }
 
-    override fun computeSizeDirectly(): Int {
+    override fun computeSizeDirectly() = if (original == null) {
         var size = 0
         value.forEach { (tag, proto) ->
             size += proto.computeSize(tag)
         }
-        return size
+        size
+    } else {
+        original.size
     }
 
     override fun toString(): String {
         return "Map($value)"
     }
 
-    fun toByteArray(): ByteArray {
-        return ProtoUtils.encodeToByteArray(this)
+    fun toByteArray(o: Boolean = false): ByteArray {
+        return if (o && original != null) original else ProtoUtils.encodeToByteArray(this)
     }
 }
