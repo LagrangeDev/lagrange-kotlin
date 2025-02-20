@@ -25,14 +25,25 @@ fun buildNTV2RichMediaDownloadReq(message: Message, entity: NTV2RichMediaEntity,
     )
 )
 
-suspend fun buildNTV2RichMediaUploadReq(message: Message, entity: NTV2RichMediaEntity, ext: ProtoMap? = null) = protobufOf(
+suspend fun buildNTV2RichMediaUploadReq(
+    message: Message, 
+    entity: NTV2RichMediaEntity,
+    ext: ProtoMap, 
+    vararg subFileInfos: Pair<Int, NTV2RichMediaEntity>
+) = protobufOf(
     1 to buildHead(message, entity, 100),
     2 to protobufOf(
         1 to listOf(
             protobufOf(
                 1 to buildFileInfo(entity),
                 2 to 0
-            )
+            ),
+            *subFileInfos.map {
+                protobufOf(
+                    1 to buildFileInfo(it.second),
+                    2 to it.first
+                )
+            }.toTypedArray()
         ),
         2 to true,
         3 to false,
@@ -50,40 +61,41 @@ suspend fun buildNTV2RichMediaUploadReq(message: Message, entity: NTV2RichMediaE
 
 fun parseNTV2RichMediaDownloadUrl(proto: ProtoMap) = "https://${proto[3][3][1].asUtf8String}${proto[3][3][2].asUtf8String}${if (proto.has(3, 1)) proto[3][1].asUtf8String else ""}"
 
-fun parseNTV2RichMediaUploadReq(proto: ProtoMap): Triple<ProtoMap, ProtoMap, ProtoMap?> {
+fun parseNTV2RichMediaUploadReq(proto: ProtoMap): Triple<ProtoMap, ProtoMap, List<ProtoMap>> {
+    val ext = arrayListOf<ProtoMap>()
     val upload = proto[2]
     
     val msgInfo = upload[6]
-    val remote = upload[3].asList.value
     val compat = upload[8]
     val subFiles = if (upload.has(10)) upload[10].asList.value else emptyList()
     
-    val network = remote.map {
-        protobufOf(
-            1 to protobufOf(
-                1 to true,
-                2 to run {
-                    val ip = it[1].asInt.readInt32LE()
-                    "${ip[0]}.${ip[1]}.${ip[2]}.${ip[3]}"
-                }
-            ),
-            2 to it[2].asInt
-        )
-    }
-    
     if (!upload.has(1)) {
-        return Triple(msgInfo.asMap, compat.asMap, null)
+        return Triple(msgInfo.asMap, compat.asMap, ext)
     }
     
-    val ext = protobufOf(
-        1 to msgInfo[1][1][2].asUtf8String,
+    ext.add(protobufOf(
+        1 to msgInfo[1].asList.value[0][1][2].asUtf8String,
         2 to upload[1].asUtf8String,
         5 to protobufOf(
-            1 to network
+            1 to parseNetworkExt(upload[3].asList)
         ),
         6 to msgInfo[1],
         10 to blockSize,
-    )
+    ))
+
+    subFiles.forEachIndexed { index, it ->
+        ext.add(
+            protobufOf(
+                1 to msgInfo[1].asList.value[index][1][2].asUtf8String,
+                2 to it[2].asUtf8String,
+                5 to protobufOf(
+                    1 to parseNetworkExt(it[4].asList)
+                ),
+                6 to msgInfo[1],
+                10 to blockSize,
+            )
+        )
+    }
 
     return Triple(msgInfo.asMap, compat.asMap, ext) 
 }
@@ -184,4 +196,17 @@ private fun getFileExt(entity: NTV2RichMediaEntity, imageFormat: ImageHelper.Ima
     }
     is RecordEntity -> "amr"
     is VideoEntity -> "mp4"
+}
+
+private fun parseNetworkExt(remote: ProtoList) = remote.value.map {
+    protobufOf(
+        1 to protobufOf(
+            1 to true,
+            2 to run {
+                val ip = it[1].asInt.readInt32LE()
+                "${ip[0]}.${ip[1]}.${ip[2]}.${ip[3]}"
+            }
+        ),
+        2 to it[2].asInt
+    )
 }

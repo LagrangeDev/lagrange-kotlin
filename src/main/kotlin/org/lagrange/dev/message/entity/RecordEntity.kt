@@ -69,12 +69,12 @@ class RecordEntity : NTV2RichMediaEntity {
         val (msgInfo, _, hwExt) = parseNTV2RichMediaUploadReq(ProtoUtils.decodeFromByteArray(response.payload))
         this.msgInfo = msgInfo
 
-        if (hwExt == null) {
+        if (hwExt.isEmpty()) {
             return
         }
 
-        hwExt[11] = listOf(protobufOf(1 to stream!!.calculateSHA1()))
-        context.highway.upload(if (message.isGroup) 1008 else 1007, stream!!, hwExt)
+        hwExt[0][11] = listOf(protobufOf(1 to stream!!.calculateSHA1()))
+        context.highway.upload(if (message.isGroup) 1008 else 1007, stream!!, hwExt[0])
     }
 
     override suspend fun postprocess(context: BotContext, message: Message) {

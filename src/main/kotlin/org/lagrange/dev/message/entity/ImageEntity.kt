@@ -78,12 +78,12 @@ class ImageEntity : NTV2RichMediaEntity {
         this.msgInfo = msgInfo
         this.compat = compat
         
-        if (hwExt == null) {
+        if (hwExt.isEmpty()) {
             return
         }
         
-        hwExt[11] = listOf(protobufOf(1 to stream!!.calculateSHA1()))
-        context.highway.upload(if (message.isGroup) 1004 else 1003, stream!!, hwExt)
+        hwExt[0][11] = listOf(protobufOf(1 to stream!!.calculateSHA1()))
+        context.highway.upload(if (message.isGroup) 1004 else 1003, stream!!, hwExt[0])
     }
 
     override suspend fun postprocess(context: BotContext, message: Message) {

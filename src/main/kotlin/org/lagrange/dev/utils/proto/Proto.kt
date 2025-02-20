@@ -53,7 +53,10 @@ val ProtoValue.asMap: ProtoMap
     get() = (this as ProtoMap)
 
 val ProtoValue.asList: ProtoList
-    get() = (this as ProtoList)
+    get() = when (this) {
+        is ProtoList -> this
+        else -> ProtoList(arrayListOf(this))
+    }
 
 val ProtoValue.asByteArray: ByteArray
     get() = when (this) {
