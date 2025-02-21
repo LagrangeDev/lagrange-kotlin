@@ -10,6 +10,8 @@ import io.ktor.serialization.kotlinx.json.*
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import org.lagrange.dev.common.AppInfo
 import org.lagrange.dev.common.SignProvider
 import org.lagrange.dev.common.SignResult
 import org.lagrange.dev.utils.ext.fromHex
@@ -18,7 +20,9 @@ import org.lagrange.dev.utils.ext.toHex
 class UrlSignProvider(val url: String) : SignProvider {
     private val client = HttpClient(CIO) {
         install(ContentNegotiation) {
-            json()
+            json(Json {
+                ignoreUnknownKeys = true
+            })
         }
     }
 
@@ -30,6 +34,17 @@ class UrlSignProvider(val url: String) : SignProvider {
             }.body<UrlSignResponse>()
         }.value
         return SignResult(value.sign.fromHex(), value.token.fromHex(), value.extra.fromHex())
+    }
+
+    fun getAppInfo(): AppInfo? {
+        return runBlocking {
+            val response = client.get("$url/appinfo")
+            if (response.status == HttpStatusCode.OK) {
+                return@runBlocking response.body<AppInfo>()
+            } else {
+                return@runBlocking null
+            }
+        }
     }
 }
 

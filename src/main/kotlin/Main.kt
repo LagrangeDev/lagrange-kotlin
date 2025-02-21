@@ -11,8 +11,10 @@ import java.nio.file.Paths
 
 fun main() {
     val signApiUrl = "https://sign.lagrangecore.org/api/sign/25765"
+    val urlSignProvider = UrlSignProvider(signApiUrl)
+    val appInfo = urlSignProvider.getAppInfo() ?: AppInfo.linux
     if (!Files.exists(Paths.get("/Users/wenxuanlin/Desktop/Project/OicqRepos/lagrange-kotlin/keystore.json"))) {
-        val bot = BotContext(Keystore.generateEmptyKeystore(), AppInfo.linux, UrlSignProvider(signApiUrl))
+        val bot = BotContext(Keystore.generateEmptyKeystore(), appInfo, UrlSignProvider(signApiUrl))
         val (url, qrcode) = runBlocking {
             bot.fetchQrCode()
         }
@@ -30,7 +32,7 @@ fun main() {
     } else {
         val json = String(Files.readAllBytes(Paths.get("/Users/wenxuanlin/Desktop/Project/OicqRepos/lagrange-kotlin/keystore.json")))
         val keystore = Json.decodeFromString(Keystore.serializer(), json)
-        val bot = BotContext(keystore, AppInfo.linux, UrlSignProvider(signApiUrl))
+        val bot = BotContext(keystore, appInfo, UrlSignProvider(signApiUrl))
         
         runBlocking {
             bot.loginByToken()
