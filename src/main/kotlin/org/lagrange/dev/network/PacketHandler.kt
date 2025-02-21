@@ -1,21 +1,13 @@
 package org.lagrange.dev.network
 
-import io.ktor.client.*
-import io.ktor.client.call.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.contentnegotiation.*
-import io.ktor.client.request.*
-import io.ktor.http.*
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
-import io.ktor.serialization.kotlinx.json.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.*
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 import org.lagrange.dev.common.AppInfo
 import org.lagrange.dev.common.Keystore
+import org.lagrange.dev.common.SignProvider
 import org.lagrange.dev.component.BotListener
 import org.lagrange.dev.utils.crypto.TEA
 import org.lagrange.dev.utils.ext.*
@@ -31,6 +23,7 @@ import kotlin.random.Random
 internal class PacketHandler(
     private val keystore: Keystore,
     private val appInfo: AppInfo,
+    private val signProvider: SignProvider,
     private val listener: BotListener
 ) {
     private var sequence = Random.nextInt(0x10000, 0x20000)
@@ -46,11 +39,6 @@ internal class PacketHandler(
     var connected = false
 
     private val logger = LoggerFactory.getLogger(PacketHandler::class.java)
-    private val client = HttpClient(CIO) {
-        install(ContentNegotiation) {
-            json()
-        }
-    }
 
     suspend fun connect() {
         val s = socket.connect(host, port)
@@ -145,17 +133,11 @@ internal class PacketHandler(
         }
         
         if (whiteListCommand.contains(command)) {
-            val url = "https://sign.lagrangecore.org/api/sign/25765"
-            val value = runBlocking {
-                client.post(url) {
-                    contentType(ContentType.Application.Json)
-                    setBody(SignRequest(cmd = command, seq = sequence, src = payload.toHex()))
-                }.body<SignResponse>()
-            }.value
+            val signResult = signProvider.sign(command, sequence, payload)
             proto[24] = protobufOf(
-                1 to value.sign.fromHex(),
-                2 to value.token.fromHex(),
-                3 to value.extra.fromHex()
+                1 to signResult.sign,
+                2 to signResult.token,
+                3 to signResult.extra
             )
         }
         
@@ -233,25 +215,4 @@ internal class PacketHandler(
             else -> throw Exception("Unrecognized auth flag: $authFlag")
         }
     }
-    
-    @Serializable
-    private data class SignRequest(
-        @SerialName("cmd") val cmd: String,
-        @SerialName("seq") val seq: Int,
-        @SerialName("src") val src: String
-    )
-    
-    @Serializable
-    private data class SignResponse(
-        val platform: String,
-        val version: String,
-        val value: SignValue
-    )
-
-    @Serializable
-    private data class SignValue(
-        val sign: String,
-        val token: String,
-        val extra: String
-    )
 }

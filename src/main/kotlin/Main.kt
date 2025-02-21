@@ -5,12 +5,14 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.lagrange.dev.common.AppInfo
 import org.lagrange.dev.common.Keystore
+import org.lagrange.dev.utils.sign.UrlSignProvider
 import java.nio.file.Files
 import java.nio.file.Paths
 
 fun main() {
+    val signApiUrl = "https://sign.lagrangecore.org/api/sign/25765"
     if (!Files.exists(Paths.get("/Users/wenxuanlin/Desktop/Project/OicqRepos/lagrange-kotlin/keystore.json"))) {
-        val bot = BotContext(Keystore.generateEmptyKeystore(), AppInfo.linux)
+        val bot = BotContext(Keystore.generateEmptyKeystore(), AppInfo.linux, UrlSignProvider(signApiUrl))
         val (url, qrcode) = runBlocking {
             bot.fetchQrCode()
         }
@@ -28,7 +30,7 @@ fun main() {
     } else {
         val json = String(Files.readAllBytes(Paths.get("/Users/wenxuanlin/Desktop/Project/OicqRepos/lagrange-kotlin/keystore.json")))
         val keystore = Json.decodeFromString(Keystore.serializer(), json)
-        val bot = BotContext(keystore, AppInfo.linux)
+        val bot = BotContext(keystore, AppInfo.linux, UrlSignProvider(signApiUrl))
         
         runBlocking {
             bot.loginByToken()

@@ -1,19 +1,27 @@
 package org.lagrange.dev
 
 import kotlinx.coroutines.*
-import org.lagrange.dev.common.*
-import org.lagrange.dev.component.*
+import org.lagrange.dev.common.AppInfo
+import org.lagrange.dev.common.Keystore
+import org.lagrange.dev.common.SignProvider
+import org.lagrange.dev.component.BotCache
+import org.lagrange.dev.component.BotEvent
+import org.lagrange.dev.component.BotHighway
+import org.lagrange.dev.component.BotListener
 import org.lagrange.dev.network.PacketHandler
 import org.lagrange.dev.packet.login.QrCodeState
 import org.lagrange.dev.packet.login.ntlogin
 import org.lagrange.dev.packet.login.wtlogin
 import org.lagrange.dev.utils.ext.toHex
-import org.lagrange.dev.utils.proto.*
+import org.lagrange.dev.utils.proto.ProtoUtils
+import org.lagrange.dev.utils.proto.asUtf8String
+import org.lagrange.dev.utils.proto.protobufOf
 import org.slf4j.LoggerFactory
 
 class BotContext(
     val keystore: Keystore,
-    internal val appInfo: AppInfo
+    internal val appInfo: AppInfo,
+    signProvider: SignProvider,
 ) {
     private var qrCodeState: QrCodeState = QrCodeState.Unknown
     
@@ -23,7 +31,7 @@ class BotContext(
     
     internal val logger = LoggerFactory.getLogger(BotContext::class.java)
 
-    internal val packet = PacketHandler(keystore, appInfo, listener)
+    internal val packet = PacketHandler(keystore, appInfo, signProvider, listener)
 
     internal val highway = BotHighway(this)
 
